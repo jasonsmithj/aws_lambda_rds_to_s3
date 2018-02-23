@@ -1,0 +1,24 @@
+{
+  "name": "aws_lambda_rds_to_s3",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jasonsmithj/aws_lambda_rds_to_s3.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jasonsmithj/aws_lambda_rds_to_s3/issues"
+  },
+  "homepage": "https://github.com/jasonsmithj/aws_lambda_rds_to_s3#readme",
+  "dependencies": {
+    "aws-sdk": "^2.201.0",
+    "date-utils": "^1.2.21",
+    "mysql": "^2.15.0"
+  }
+}
