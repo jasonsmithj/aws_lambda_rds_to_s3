@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/jasonsmithj/aws_lambda_rds_to_s3#readme",
   "dependencies": {
+    "async": "^2.6.0",
     "aws-sdk": "^2.201.0",
     "date-utils": "^1.2.21",
     "mysql": "^2.15.0"

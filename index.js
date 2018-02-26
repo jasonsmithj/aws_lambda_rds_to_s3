@@ -2,6 +2,7 @@ require('date-utils');
 
 var aws = require('aws-sdk');
 var mysql = require('mysql');
+var async = require('async');
 
 var mysql_host = process.env.DB_ENDPOINT;
 var mysql_dbname = process.env.DB_NAME;
@@ -17,33 +18,33 @@ var dt = new Date();
 var now_data = dt.toFormat("YYYYMMDDHH24MISS");
 
 function createSingleConnection() {
-    connection = mysql.createConnection({
-        host     : mysql_host,
-        user     : mysql_user,
-        password : mysql_password,
-        database : mysql_dbname
-    });
+  connection = mysql.createConnection({
+    host     : mysql_host,
+    user     : mysql_user,
+    password : mysql_password,
+    database : mysql_dbname
+  });
 
-    connection.on('error', (err) => {
-        if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-            createSingleConnection();
-            console.log(`Reconnected`);
-        } else {
-            throw err;
-        }
-    });
+  connection.on('error', (err) => {
+    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+      createSingleConnection();
+      console.log(`Reconnected`);
+    } else {
+      throw err;
+    }
+  });
 }
 
 function json2csv(json) {
-    var header = Object.keys(json[0]).join('\t') + "\n";
+  var header = Object.keys(json[0]).join('\t') + "\n";
 
-    var body = json.map(function(d){
-        return Object.keys(d).map(function(key) {
-            return d[key];
-        }).join('\t');
-    }).join("\n");
+  var body = json.map(function(d){
+    return Object.keys(d).map(function(key) {
+      return d[key];
+    }).join('\t');
+  }).join("\n");
 
-    return header + body;
+  return header + body;
 }
 
 function tsvUpload(tsvdata) {
@@ -64,23 +65,43 @@ function tsvUpload(tsvdata) {
       console.log(data);
     }
   });
+
 }
 
 createSingleConnection();
 
 exports.handler = function(event, context){
-    var sql ="SELECT * FROM " + mysql_dbname + "." + mysql_tablename;
+  var sql ="SELECT * FROM " + mysql_dbname + "." + mysql_tablename;
 
-    connection.query(sql, function(err, rows, fields) {
+  async.waterfall([
+    function (callback) {
+      connection.query(sql, function(err, rows, fields) {
         if (err) {
-            console.log("Error");
-            context.fail(err);
-            throw err;
+          console.log("Query Error");
+          callback(JSON.stringify({result: 'Failed'}), null);
+          throw err;
         } else {
-            console.log("Success");
-            tsvdata = json2csv(rows);
-            tsvUpload(tsvdata);
+          console.log("Success");
+          tsvdata = json2csv(rows);
+          callback(null, tsvdata);
         }
-    });
-
+      });
+    },
+    function (tsvdata, callback) {
+      console.log("TSV Success");
+      tsvUpload(tsvdata, function (err, res, body) {
+        if (err) {
+          console.log("TSV UpLoad Error");
+          callback(JSON.stringify({result: 'Failed'}), null);
+          throw err;
+        } else {
+          callback(null);
+        }
+      });
+    }
+  ], function (err) {
+    if (err) { console.log('Error:' + err); }
+    console.log('all done. ');
+    context.succeed("success");
+  });
 };
